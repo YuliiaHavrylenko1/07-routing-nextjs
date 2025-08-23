@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDebounce } from 'use-debounce';
 import {
   useQuery,
@@ -26,25 +26,42 @@ type FetchNotesResp = {
 type Props = {
   notes: Note[];
   totalPages: number;
+  activeTag: string;  
 };
 
-export default function NotesClient({ notes: initialNotes, totalPages: initialTotalPages }: Props) {
+export default function NotesClient({ notes: initialNotes, totalPages: initialTotalPages, activeTag }: Props) {
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [inputValue, setInputValue] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentTag, setCurrentTag] = useState(activeTag);
 
   const [debouncedSearch] = useDebounce(searchQuery, 300);
   const queryClient = useQueryClient();
 
-  
+  useEffect(() => {
+    setCurrentTag(activeTag);
+    setPage(1);
+    setSearchQuery('');
+    setInputValue('');
+  }, [activeTag]);
+
   const { data, isLoading, isError } = useQuery<FetchNotesResp>({
-    queryKey: ['notes', page, debouncedSearch],
-    queryFn: () => fetchNotes({ page, perPage: 12, search: debouncedSearch }),
-    initialData: page === 1 && debouncedSearch === '' ? {
-      notes: initialNotes,
-      totalPages: initialTotalPages,
-    } : undefined,
+    queryKey: ['notes', page, debouncedSearch, currentTag],
+    queryFn: () =>
+      fetchNotes({
+        page,
+        perPage: 12,
+        search: debouncedSearch || undefined,
+        tag: currentTag && currentTag !== 'All' ? currentTag : undefined,
+      }),
+    initialData:
+      page === 1 && debouncedSearch === '' && (currentTag === 'All' || !currentTag)
+        ? {
+            notes: initialNotes,
+            totalPages: initialTotalPages,
+          }
+        : undefined,
     staleTime: 5000,
   });
 
@@ -57,7 +74,6 @@ export default function NotesClient({ notes: initialNotes, totalPages: initialTo
   const handleNoteCreate = () => {
     setPage(1);
     setIsModalOpen(false);
-    
     queryClient.invalidateQueries({ queryKey: ['notes'] });
   };
 
@@ -76,6 +92,8 @@ export default function NotesClient({ notes: initialNotes, totalPages: initialTo
         </button>
       </header>
 
+      <h2>Notes for tag: {currentTag}</h2>
+
       {isLoading && <p>Loading, please wait...</p>}
 
       {isError && (
@@ -92,6 +110,10 @@ export default function NotesClient({ notes: initialNotes, totalPages: initialTo
       )}
 
       {!isLoading && !isError && notes.length > 0 && <NoteList notes={notes} />}
+
+      {!isLoading && !isError && notes.length === 0 && (
+        <p>No notes found for this filter.</p>
+      )}
 
       {isModalOpen && (
         <Modal onClose={() => setIsModalOpen(false)}>
