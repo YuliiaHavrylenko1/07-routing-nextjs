@@ -1,5 +1,3 @@
-// app/not-found.tsx
-
 import styles from './not-found.module.css';
 
 export default function NotFoundPage() {
