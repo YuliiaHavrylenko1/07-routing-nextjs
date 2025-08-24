@@ -7,12 +7,12 @@ import css from "./Modal.module.css";
 
 interface ModalProps {
   children: React.ReactNode;
+   onClose: () => void;
 }
 
 export default function Modal({ children }: ModalProps) {
   const router = useRouter();
 
-  
   const onClose = () => {
     router.back();
   };
