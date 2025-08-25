@@ -1,5 +1,5 @@
 
-import NotePreviewClient from './modalPreview.client';
+import NotePreviewClient from './NotePreview.client';
 import { fetchNoteById } from '@/lib/api';
 
 type Props = {
